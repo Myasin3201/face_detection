@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>تشخیص چهره | Face Detection</title>
+<style>
+    * { box-sizing: border-box; }
+
+    body {
+        font-family: Tahoma, Arial, sans-serif;
+        background: #f2f4f7;
+        margin: 0;
+        padding: 40px 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        color: #222;
+    }
+
+    .container {
+        background: #ffffff;
+        max-width: 600px;
+        width: 100%;
+        padding: 30px;
+        border-radius: 14px;
+        box-shadow: 0 4px 18px rgba(0,0,0,0.08);
+        text-align: center;
+    }
+
+    h1 {
+        font-size: 22px;
+        margin-bottom: 8px;
+    }
+
+    p.subtitle {
+        color: #666;
+        margin-top: 0;
+        margin-bottom: 25px;
+        font-size: 14px;
+    }
+
+    .upload-box {
+        border: 2px dashed #9aa5b1;
+        border-radius: 12px;
+        padding: 30px 15px;
+        cursor: pointer;
+        transition: 0.2s;
+        background: #fafbfc;
+    }
+
+    .upload-box:hover {
+        border-color: #4a90e2;
+        background: #f0f6ff;
+    }
+
+    .upload-box p {
+        margin: 8px 0 0 0;
+        color: #555;
+        font-size: 14px;
+    }
+
+    #fileInput {
+        display: none;
+    }
+
+    #previewImg, #resultImg {
+        max-width: 100%;
+        border-radius: 10px;
+        margin-top: 15px;
+        display: none;
+    }
+
+    button#detectBtn {
+        margin-top: 20px;
+        padding: 12px 28px;
+        background: #4a90e2;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 15px;
+        cursor: pointer;
+        display: none;
+        transition: 0.2s;
+    }
+
+    button#detectBtn:hover {
+        background: #3576c4;
+    }
+
+    button#detectBtn:disabled {
+        background: #a9c6ea;
+        cursor: not-allowed;
+    }
+
+    #status {
+        margin-top: 15px;
+        font-size: 14px;
+        color: #444;
+        min-height: 20px;
+    }
+
+    .result-box {
+        margin-top: 25px;
+        padding-top: 20px;
+        border-top: 1px solid #eee;
+        display: none;
+    }
+
+    .face-count {
+        font-weight: bold;
+        color: #2e7d32;
+        margin-bottom: 10px;
+        font-size: 15px;
+    }
+
+    .error-text {
+        color: #c0392b;
+    }
+</style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🔍 سامانه تشخیص چهره</h1>
+    <p class="subtitle">یک تصویر آپلود کنید تا چهره‌های داخل آن با کادر سبز مشخص شوند</p>
+
+    <!-- کلیک روی این باکس باعث باز شدن پنجره انتخاب فایل می‌شود -->
+    <div class="upload-box" id="uploadBox">
+        <p>📁 برای انتخاب عکس کلیک کنید</p>
+        <input type="file" id="fileInput" accept="image/*">
+        <img id="previewImg" alt="پیش‌نمایش عکس انتخابی">
+    </div>
+
+    <button id="detectBtn">تشخیص چهره</button>
+
+    <div id="status"></div>
+
+    <div class="result-box" id="resultBox">
+        <div class="face-count" id="faceCount"></div>
+        <img id="resultImg" alt="نتیجه تشخیص چهره">
+    </div>
+</div>
+
+<script>
+    // ---------------------------------------------------------
+    // گرفتن ارجاع به المان‌های صفحه
+    // ---------------------------------------------------------
+    const uploadBox   = document.getElementById("uploadBox");
+    const fileInput   = document.getElementById("fileInput");
+    const previewImg  = document.getElementById("previewImg");
+    const detectBtn   = document.getElementById("detectBtn");
+    const statusEl    = document.getElementById("status");
+    const resultBox   = document.getElementById("resultBox");
+    const resultImg   = document.getElementById("resultImg");
+    const faceCountEl = document.getElementById("faceCount");
+
+    let selectedFile = null;
+
+    // با کلیک روی باکس، پنجره انتخاب فایل مرورگر باز شود
+    uploadBox.addEventListener("click", () => fileInput.click());
+
+    // وقتی کاربر یک فایل انتخاب کرد
+    fileInput.addEventListener("change", (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        selectedFile = file;
+
+        // نمایش پیش‌نمایش عکس انتخابی قبل از ارسال به سرور
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            previewImg.src = e.target.result;
+            previewImg.style.display = "block";
+        };
+        reader.readAsDataURL(file);
+
+        detectBtn.style.display = "inline-block";
+        statusEl.textContent = "";
+        resultBox.style.display = "none";
+    });
+
+    // وقتی دکمه «تشخیص چهره» کلیک شد
+    detectBtn.addEventListener("click", async () => {
+        if (!selectedFile) return;
+
+        detectBtn.disabled = true;
+        statusEl.textContent = "⏳ در حال پردازش تصویر... چند لحظه صبر کنید";
+
+        // FormData: روش استاندارد برای فرستادن فایل به سرور در یک درخواست HTTP
+        const formData = new FormData();
+        formData.append("image", selectedFile);
+
+        try {
+            const response = await fetch("/detect", {
+                method: "POST",
+                body: formData
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || "خطای نامشخص از سرور");
+            }
+
+            // نمایش عکس نتیجه که سرور برگردانده است
+            resultImg.src = data.result_image_url + "?t=" + Date.now(); // جلوگیری از کش شدن عکس
+            resultImg.style.display = "block";
+            faceCountEl.textContent = `تعداد چهره‌های تشخیص‌داده‌شده: ${data.face_count}`;
+            resultBox.style.display = "block";
+            statusEl.textContent = "✅ پردازش با موفقیت انجام شد";
+
+        } catch (err) {
+            statusEl.textContent = "❌ خطا: " + err.message;
+            statusEl.classList.add("error-text");
+        } finally {
+            detectBtn.disabled = false;
+        }
+    });
+</script>
+
+</body>
+</html>
