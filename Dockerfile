@@ -26,7 +26,7 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt gunicorn
 
-# ۵) حالا بقیه فایل‌های پروژه (app.py، templates، مدل و...) را کپی می‌کنیم
+# ۵) حالا بقیه فایل‌های پروژه (detect.py، templates، مدل و...) را کپی می‌کنیم
 COPY . .
 
 # ۶) پوشه‌های آپلود و نتیجه را از قبل بسازیم
