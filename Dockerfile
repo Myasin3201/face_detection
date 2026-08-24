@@ -19,7 +19,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # ۳) پوشه کاری داخل کانتینر
-WORKDIR /backend_of_faceDetection
+WORKDIR /app
 
 # ۴) اول فقط requirements.txt را کپی می‌کنیم تا Docker بتواند لایه نصب پکیج‌ها
 #    را کش کند (اگر فقط کد را عوض کنید، دیگر لازم نیست همه پکیج‌ها دوباره نصب شوند)
@@ -39,4 +39,4 @@ EXPOSE 8080
 
 # ۸) دستور اجرای نهایی: به‌جای سرور توسعه Flask، از gunicorn استفاده می‌کنیم
 #    (پایدارتر و برای اجرای واقعی مناسب است)
-CMD exec gunicorn --bind 0.0.0.0:${PORT} --workers 1 --threads 4 --timeout 120 backend_of_faceDetection:backend_of_faceDetection
+CMD exec gunicorn --bind 0.0.0.0:${PORT} --workers 1 --threads 4 --timeout 120 backend_of_faceDetection:app
