@@ -39,4 +39,4 @@ EXPOSE 8080
 
 # ۸) دستور اجرای نهایی: به‌جای سرور توسعه Flask، از gunicorn استفاده می‌کنیم
 #    (پایدارتر و برای اجرای واقعی مناسب است)
-CMD exec gunicorn --bind 0.0.0.0:${PORT} --workers 1 --threads 4 --timeout 120 backend_of_faceDetection:app
+CMD exec gunicorn --bind 0.0.0.0:${PORT} --workers 1 --threads 4 --timeout 120 backend_of_faceDetection:backend_of_faceDetection
